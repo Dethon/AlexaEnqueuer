@@ -9,7 +9,7 @@
         public const string queue = "QueueName";
         public const string serviceBusUri = "ServiceBusConnection";
         public const string allowedUserId = "AllowedUserId";
-        public const string userRestriction = "userRestriction";
+        public const string userRestriction = "UserRestriction";
     }
 
     static class Skill {
