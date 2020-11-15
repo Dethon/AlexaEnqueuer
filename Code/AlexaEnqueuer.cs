@@ -14,10 +14,9 @@ namespace AlexaEnqueuer {
         private static ILogger m_log;
 
         [FunctionName("AlexaEnqueuer")]
-        public static async Task<IActionResult> Run(
-                [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest request,
-                [ServiceBus("%" + VariableName.queue + "%", Connection = VariableName.serviceBusUri)] IAsyncCollector<MessageDTO> queueCollector,
-                ILogger logger) {
+        public static async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest request,
+                                                    [ServiceBus("%" + VariableName.queue + "%", Connection = VariableName.serviceBusUri)] IAsyncCollector<MessageDTO> queueCollector,
+                                                    ILogger logger) {
             m_log = logger;
             var skillRequest = JsonConvert.DeserializeObject<SkillRequest>(await request.ReadAsStringAsync());
             if (!await ValidateRequest(request, skillRequest)) {
