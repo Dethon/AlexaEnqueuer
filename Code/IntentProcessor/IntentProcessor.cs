@@ -10,11 +10,11 @@ using AlexaEnqueuer.Resources;
 
 namespace AlexaEnqueuer {
     abstract class IntentProcessor {
-        ILogger m_log;
+        ILogger m_logger;
 
         public ProcessorResponse ProcessIntent(SkillRequest skillRequest, ILogger logger) {
             AlexaResponse.Culture = CultureInfo.GetCultureInfo(skillRequest.Request.Locale);
-            m_log = logger;
+            m_logger = logger;
 
             if (!UserAllowed(skillRequest)) {
                 return new ProcessorResponse(Tell(AlexaResponse.userNotAllowed));
@@ -24,14 +24,14 @@ namespace AlexaEnqueuer {
                 return ProcessIntent(skillRequest.Request as IntentRequest);
             }
 
-            m_log.LogInformation($"Unexpected type {skillRequest.GetRequestType().Name}");
+            m_logger.LogInformation($"Unexpected type {skillRequest.GetRequestType().Name}");
             return new ProcessorResponse(Tell(AlexaResponse.typeError));
         }
 
         private ProcessorResponse ProcessIntent(IntentRequest intentRequest) {
             var intent = intentRequest.Intent.Name;
             var intentConfirmation = intentRequest.Intent.ConfirmationStatus;
-            m_log.LogInformation($"Processing {intent} with confirmation {intentConfirmation}");
+            m_logger.LogInformation($"Processing {intent} with confirmation {intentConfirmation}");
 
             if (intentConfirmation == ConfirmationStatus.denied) {
                 return new ProcessorResponse(AskOrders(AlexaResponse.askAfterAction, AlexaResponse.askForActions));

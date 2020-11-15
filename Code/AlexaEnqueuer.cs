@@ -11,16 +11,16 @@ using Newtonsoft.Json;
 namespace AlexaEnqueuer {
     public static class AlexaEnqueuer {
         private static readonly IntentProcessor m_intentProcessor = new ComputerIgniterIntentProcessor();
-        private static ILogger m_log;
+        private static ILogger m_logger;
 
         [FunctionName("AlexaEnqueuer")]
         public static async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest request,
                                                     [ServiceBus("%" + VariableName.queue + "%", Connection = VariableName.serviceBusUri)] IAsyncCollector<MessageDTO> queueCollector,
                                                     ILogger logger) {
-            m_log = logger;
+            m_logger = logger;
             var skillRequest = JsonConvert.DeserializeObject<SkillRequest>(await request.ReadAsStringAsync());
             if (!await ValidateRequest(request, skillRequest)) {
-                m_log.LogError("Validation failed - RequestVerification failed");
+                m_logger.LogError("Validation failed - RequestVerification failed");
                 return new BadRequestResult();
             }
 
@@ -40,14 +40,14 @@ namespace AlexaEnqueuer {
                     RequestVerification.RequestTimestampWithinTolerance(skillRequest) &&
                     await RequestVerification.Verify(signature, certUrl, body);
             } catch {
-                m_log.LogError("Validation exception");
+                m_logger.LogError("Validation exception");
                 return false;
             }            
         }
 
         private static async Task EnqueueMessage(IAsyncCollector<MessageDTO> queueCollector, MessageDTO message) {
             if (message != null) {
-                m_log.LogInformation($"Enqueuing {message.Skill} - {message.Intent}");
+                m_logger.LogInformation($"Enqueuing {message.Skill} - {message.Intent}");
                 await queueCollector.AddAsync(message);
             }
         }
