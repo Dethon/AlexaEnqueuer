@@ -1,7 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using Microsoft.AspNetCore.Mvc;
 
 namespace AlexaEnqueuer {
+    [Serializable]
     public class MessageDTO {
+        // Customize this to your heart's content
         public string Skill { get; set; }
         public string Intent { get; set; }
 

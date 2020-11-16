@@ -10,11 +10,12 @@ using Newtonsoft.Json;
 
 namespace AlexaEnqueuer {
     public static class AlexaEnqueuer {
+        // Change this instantiation for your own subclass
         private static readonly IntentProcessor m_intentProcessor = new ComputerIgniterIntentProcessor();
         private static ILogger m_logger;
 
         [FunctionName("AlexaEnqueuer")]
-        public static async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest request,
+        public static async Task<IActionResult> AlexaInput([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest request,
                                                     [ServiceBus("%" + VariableName.queue + "%", Connection = VariableName.serviceBusUri)] IAsyncCollector<MessageDTO> queueCollector,
                                                     ILogger logger) {
             m_logger = logger;
