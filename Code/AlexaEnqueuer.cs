@@ -9,13 +9,17 @@ using Alexa.NET.Request;
 using Newtonsoft.Json;
 
 namespace AlexaEnqueuer {
-    public static class AlexaEnqueuer {
+    public class AlexaEnqueuer {
         // Change this instantiation for your own subclass
-        private static readonly IntentProcessor m_intentProcessor = new ComputerIgniterIntentProcessor();
-        private static ILogger m_logger;
+        private readonly IntentProcessor m_intentProcessor;
+        private ILogger m_logger;
+
+        public AlexaEnqueuer(IntentProcessor intentProcessor) {
+            m_intentProcessor = intentProcessor;
+        }
 
         [FunctionName("AlexaEnqueuer")]
-        public static async Task<IActionResult> AlexaInput([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest request,
+        public async Task<IActionResult> AlexaInput([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest request,
                                                     [ServiceBus("%" + VariableName.queue + "%", Connection = VariableName.serviceBusUri)] IAsyncCollector<MessageDTO> queueCollector,
                                                     ILogger logger) {
             m_logger = logger;
@@ -30,7 +34,7 @@ namespace AlexaEnqueuer {
             return response.Response;
         }
 
-        private static async Task<bool> ValidateRequest(HttpRequest request, SkillRequest skillRequest) {
+        private async Task<bool> ValidateRequest(HttpRequest request, SkillRequest skillRequest) {
             try {
                 var header = request.Headers;
                 var signature = header["Signature"];
@@ -46,7 +50,7 @@ namespace AlexaEnqueuer {
             }            
         }
 
-        private static async Task EnqueueMessage(IAsyncCollector<MessageDTO> queueCollector, MessageDTO message) {
+        private async Task EnqueueMessage(IAsyncCollector<MessageDTO> queueCollector, MessageDTO message) {
             if (message != null) {
                 m_logger.LogInformation($"Enqueuing {message.Skill} - {message.Intent}");
                 await queueCollector.AddAsync(message);
@@ -54,7 +58,7 @@ namespace AlexaEnqueuer {
         }
 
         [FunctionName("AutoHeater")]
-        public static void AutoHeater([TimerTrigger("0 */15 * * * *")] TimerInfo myTimer, ILogger log) {
+        public void AutoHeater([TimerTrigger("0 */15 * * * *")] TimerInfo myTimer, ILogger log) {
             log.LogInformation($"Warming...: {DateTime.Now}");
         }
     }

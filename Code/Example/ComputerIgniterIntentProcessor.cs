@@ -1,7 +1,8 @@
 ﻿using Alexa.NET.Request.Type;
+using AlexaEnqueuer;
 using AlexaEnqueuer.Resources;
 
-namespace AlexaEnqueuer {
+namespace AlexaEnqueuerExample {
     public class ComputerIgniterIntentProcessor : IntentProcessor {
 
         protected override ProcessorResponse IntentBehavior(IntentRequest intentRequest) {
