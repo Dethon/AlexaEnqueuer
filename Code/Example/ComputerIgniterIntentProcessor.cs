@@ -2,7 +2,7 @@
 using AlexaEnqueuer.Resources;
 
 namespace AlexaEnqueuer {
-    class ComputerIgniterIntentProcessor : IntentProcessor {
+    public class ComputerIgniterIntentProcessor : IntentProcessor {
 
         protected override ProcessorResponse IntentBehavior(IntentRequest intentRequest) {
             var intent = intentRequest.Intent.Name;

@@ -1,10 +1,10 @@
 ﻿namespace AlexaEnqueuer {
-    static class ConfirmationStatus {
+    public static class ConfirmationStatus {
         public const string denied = "DENIED";
         public const string confirmed = "CONFIRMED";
     }
 
-    static class VariableName {
+    public static class VariableName {
         // Use your own setting names
         public const string queue = "QueueName";
         public const string serviceBusUri = "ServiceBusConnection";
@@ -12,12 +12,12 @@
         public const string userRestriction = "UserRestriction";
     }
 
-    static class Skill {
+    public static class Skill {
         // Customize this to your heart's content
         public const string computerControl = "computerControl";
     }
 
-    static class Intent {
+    public static class Intent {
         // You are forced to implement these intents for all Amazon Alexa skills
         public const string cancel = "AMAZON.CancelIntent";
         public const string stop = "AMAZON.StopIntent";

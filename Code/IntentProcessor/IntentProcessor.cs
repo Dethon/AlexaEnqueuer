@@ -9,7 +9,7 @@ using Alexa.NET.Response;
 using AlexaEnqueuer.Resources;
 
 namespace AlexaEnqueuer {
-    abstract class IntentProcessor {
+    public abstract class IntentProcessor {
         ILogger m_logger;
 
         public ProcessorResponse ProcessIntent(SkillRequest skillRequest, ILogger logger) {
