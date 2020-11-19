@@ -10,7 +10,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Alexa.NET" Version="1.14.0" />
-    <PackageReference Include="Microsoft.ApplicationInsights.WorkerService" Version="2.16.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
     <PackageReference Include="Microsoft.Azure.ServiceBus" Version="5.0.0" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Core" Version="3.0.23" />
