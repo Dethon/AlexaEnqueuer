@@ -18,5 +18,5 @@ The function uses some settings that must be configured for your use case:
 
 These setting names are defined as constants within `VariableName`.
 
-## Related projects
+## Related Repositories
 Look at https://github.com/Dethon/AlexaCommandReader for a companion command reader program.
