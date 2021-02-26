@@ -17,3 +17,6 @@ The function uses some settings that must be configured for your use case:
     `AllowedUserId`: The id of the only amazon user that wil be able to use the skill.
 
 These setting names are defined as constants within `VariableName`.
+
+## Related projects
+Look at https://github.com/Dethon/AlexaCommandReader for a companion command reader program.
