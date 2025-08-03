@@ -1,4 +1,4 @@
-# Alexa Equeuer
+# Alexa Enqueuer
 
 A simple Azure Function to enqueue commands sent by an Alexa skill.
 
