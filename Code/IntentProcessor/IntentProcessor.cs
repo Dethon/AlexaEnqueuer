@@ -7,6 +7,7 @@ using AlexaEnqueuer.Code.Utils;
 using AlexaEnqueuer.Resources;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using ConfirmationStatus = AlexaEnqueuer.Code.Utils.ConfirmationStatus;
 
 namespace AlexaEnqueuer.Code.IntentProcessor;
@@ -60,11 +61,19 @@ public abstract class IntentProcessor {
         };
     }
 
+    private static IActionResult AlexaJson(SkillResponse response) {
+        return new ContentResult {
+            StatusCode = 200,
+            ContentType = "application/json; charset=utf-8",
+            Content = JsonConvert.SerializeObject(response)
+        };
+    }
+
     protected IActionResult AskOrders(string prompt, string reprompt) {
-        return new OkObjectResult(ResponseBuilder.Ask(prompt, GenReprompt(reprompt)));
+        return AlexaJson(ResponseBuilder.Ask(prompt, GenReprompt(reprompt)));
     }
 
     protected IActionResult Tell(string message) {
-        return new OkObjectResult(ResponseBuilder.Tell(message));
+        return AlexaJson(ResponseBuilder.Tell(message));
     }
 }
