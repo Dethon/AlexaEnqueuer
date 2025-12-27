@@ -1,65 +1,66 @@
-using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
+using System.Text.Json;
 using Alexa.NET.Request;
-using Newtonsoft.Json;
+using AlexaEnqueuer.Code.Utils;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Logging;
 
-namespace AlexaEnqueuer {
-    public class AlexaEnqueuer {
-        // Change this instantiation for your own subclass
-        private readonly IntentProcessor m_intentProcessor;
-        private ILogger m_logger;
+namespace AlexaEnqueuer.Code;
 
-        public AlexaEnqueuer(IntentProcessor intentProcessor) {
-            m_intentProcessor = intentProcessor;
-        }
+public class AlexaEnqueuer {
+    // Change this instantiation for your own subclass
+    private readonly IntentProcessor.IntentProcessor _mIntentProcessor;
+    private readonly ILogger<AlexaEnqueuer> _mLogger;
 
-        [FunctionName("AlexaEnqueuer")]
-        public async Task<IActionResult> AlexaInput([HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest request,
-                                                    [ServiceBus("%" + VariableName.queue + "%", Connection = VariableName.serviceBusUri)] IAsyncCollector<MessageDTO> queueCollector,
-                                                    ILogger logger) {
-            m_logger = logger;
-            var skillRequest = JsonConvert.DeserializeObject<SkillRequest>(await request.ReadAsStringAsync());
-            if (!await ValidateRequest(request, skillRequest)) {
-                m_logger.LogError("Validation failed - RequestVerification failed");
-                return new BadRequestResult();
-            }
-
-            var response = m_intentProcessor.ProcessIntent(skillRequest, logger);
-            await EnqueueMessage(queueCollector, response.Message);
-            return response.Response;
-        }
-
-        private async Task<bool> ValidateRequest(HttpRequest request, SkillRequest skillRequest) {
-            try {
-                var header = request.Headers;
-                var signature = header["Signature"];
-                var certUrl = new Uri(header["SignatureCertChainUrl"]);
-                var body = await request.ReadAsStringAsync();
-
-                return 
-                    RequestVerification.RequestTimestampWithinTolerance(skillRequest) &&
-                    await RequestVerification.Verify(signature, certUrl, body);
-            } catch {
-                m_logger.LogError("Validation exception");
-                return false;
-            }            
-        }
-
-        private async Task EnqueueMessage(IAsyncCollector<MessageDTO> queueCollector, MessageDTO message) {
-            if (message != null) {
-                m_logger.LogInformation($"Enqueuing {message.Skill} - {message.Intent}");
-                await queueCollector.AddAsync(message);
-            }
-        }
-
-        [FunctionName("AutoHeater")]
-        public void AutoHeater([TimerTrigger("0 */15 * * * *")] TimerInfo myTimer, ILogger log) {
-            log.LogInformation($"Warming...: {DateTime.Now}");
-        }
+    public AlexaEnqueuer(IntentProcessor.IntentProcessor intentProcessor, ILogger<AlexaEnqueuer> logger) {
+        _mIntentProcessor = intentProcessor;
+        _mLogger = logger;
     }
+
+    [Function("AlexaEnqueuer")]
+    public async Task<AlexaEnqueuerOutput> AlexaInput(
+        [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest request) {
+        using var reader = new StreamReader(request.Body);
+        var body = await reader.ReadToEndAsync();
+        var skillRequest = JsonSerializer.Deserialize<SkillRequest>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        if (skillRequest == null || !await ValidateRequest(request, skillRequest, body)) {
+            _mLogger.LogError("Validation failed - RequestVerification failed");
+            return new AlexaEnqueuerOutput { HttpResponse = new BadRequestResult() };
+        }
+
+        var response = _mIntentProcessor.ProcessIntent(skillRequest, _mLogger);
+        return new AlexaEnqueuerOutput {
+            HttpResponse = response.Response,
+            Message = response.Message
+        };
+    }
+
+    private async Task<bool> ValidateRequest(HttpRequest request, SkillRequest skillRequest, string body) {
+        try {
+            var header = request.Headers;
+            var signature = header["Signature"].ToString();
+            var certUrl = new Uri(header["SignatureCertChainUrl"].ToString());
+
+            return 
+                RequestVerification.RequestTimestampWithinTolerance(skillRequest) &&
+                await RequestVerification.Verify(signature, certUrl, body);
+        } catch {
+            _mLogger.LogError("Validation exception");
+            return false;
+        }            
+    }
+
+    [Function("AutoHeater")]
+    public void AutoHeater([TimerTrigger("0 */15 * * * *")] TimerInfo myTimer) {
+        _mLogger.LogInformation($"Warming...: {DateTime.Now}");
+    }
+}
+
+public class AlexaEnqueuerOutput {
+    [HttpResult]
+    public IActionResult? HttpResponse { get; set; }
+
+    [ServiceBusOutput("%" + VariableName.queue + "%", Connection = VariableName.serviceBusUri)]
+    public MessageDto? Message { get; set; }
 }

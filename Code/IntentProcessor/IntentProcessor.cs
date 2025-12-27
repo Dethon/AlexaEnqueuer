@@ -1,69 +1,70 @@
-﻿using System;
-using System.Globalization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+﻿using System.Globalization;
 using Alexa.NET;
 using Alexa.NET.Request;
 using Alexa.NET.Request.Type;
 using Alexa.NET.Response;
+using AlexaEnqueuer.Code.Utils;
 using AlexaEnqueuer.Resources;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using ConfirmationStatus = AlexaEnqueuer.Code.Utils.ConfirmationStatus;
 
-namespace AlexaEnqueuer {
-    public abstract class IntentProcessor {
-        ILogger m_logger;
+namespace AlexaEnqueuer.Code.IntentProcessor;
 
-        public ProcessorResponse ProcessIntent(SkillRequest skillRequest, ILogger logger) {
-            AlexaResponse.Culture = CultureInfo.GetCultureInfo(skillRequest.Request.Locale);
-            m_logger = logger;
+public abstract class IntentProcessor {
+    private ILogger? _mLogger;
 
-            if (!UserAllowed(skillRequest)) {
-                return new ProcessorResponse(Tell(AlexaResponse.userNotAllowed));
-            } else if (skillRequest.GetRequestType() == typeof(LaunchRequest)) {
-                return new ProcessorResponse(AskOrders(AlexaResponse.askAtFirst, AlexaResponse.askForActions));
-            } else if (skillRequest.GetRequestType() == typeof(IntentRequest)) {
-                return ProcessIntent(skillRequest.Request as IntentRequest);
-            }
+    public ProcessorResponse ProcessIntent(SkillRequest skillRequest, ILogger logger) {
+        AlexaResponse.Culture = CultureInfo.GetCultureInfo(skillRequest.Request.Locale);
+        _mLogger = logger;
 
-            m_logger.LogInformation($"Unexpected type {skillRequest.GetRequestType().Name}");
-            return new ProcessorResponse(Tell(AlexaResponse.typeError));
+        if (!UserAllowed(skillRequest)) {
+            return new ProcessorResponse(Tell(AlexaResponse.userNotAllowed));
+        } else if (skillRequest.GetRequestType() == typeof(LaunchRequest)) {
+            return new ProcessorResponse(AskOrders(AlexaResponse.askAtFirst, AlexaResponse.askForActions));
+        } else if (skillRequest.GetRequestType() == typeof(IntentRequest)) {
+            return ProcessIntent((IntentRequest)skillRequest.Request);
         }
 
-        private ProcessorResponse ProcessIntent(IntentRequest intentRequest) {
-            var intent = intentRequest.Intent.Name;
-            var intentConfirmation = intentRequest.Intent.ConfirmationStatus;
-            m_logger.LogInformation($"Processing {intent} with confirmation {intentConfirmation}");
+        _mLogger.LogInformation($"Unexpected type {skillRequest.GetRequestType().Name}");
+        return new ProcessorResponse(Tell(AlexaResponse.typeError));
+    }
 
-            if (intentConfirmation == ConfirmationStatus.denied) {
-                return new ProcessorResponse(AskOrders(AlexaResponse.askAfterAction, AlexaResponse.askForActions));
-            }
+    private ProcessorResponse ProcessIntent(IntentRequest intentRequest) {
+        var intent = intentRequest.Intent.Name;
+        var intentConfirmation = intentRequest.Intent.ConfirmationStatus;
+        _mLogger?.LogInformation($"Processing {intent} with confirmation {intentConfirmation}");
 
-            return IntentBehavior(intentRequest);
+        if (intentConfirmation == ConfirmationStatus.denied) {
+            return new ProcessorResponse(AskOrders(AlexaResponse.askAfterAction, AlexaResponse.askForActions));
         }
 
-        protected abstract ProcessorResponse IntentBehavior(IntentRequest intentRequest);
+        return IntentBehavior(intentRequest);
+    }
 
-        protected bool UserAllowed(SkillRequest skillRequest) {
-            return 
-                GetSetting(VariableName.userRestriction) == null ||
-                GetSetting(VariableName.allowedUserId) == skillRequest.Session.User.UserId; 
-        }
+    protected abstract ProcessorResponse IntentBehavior(IntentRequest intentRequest);
 
-        protected string GetSetting(string name) {
-            return Environment.GetEnvironmentVariable(name);
-        }
+    protected bool UserAllowed(SkillRequest skillRequest) {
+        return 
+            GetSetting(VariableName.userRestriction) == null ||
+            GetSetting(VariableName.allowedUserId) == skillRequest.Session.User.UserId; 
+    }
 
-        protected Reprompt GenReprompt(string message) {
-            return new Reprompt {
-                OutputSpeech = new PlainTextOutputSpeech(message)
-            };
-        }
+    protected string? GetSetting(string name) {
+        return Environment.GetEnvironmentVariable(name);
+    }
 
-        protected IActionResult AskOrders(string prompt, string reprompt) {
-            return new OkObjectResult(ResponseBuilder.Ask(prompt, GenReprompt(reprompt)));
-        }
+    protected Reprompt GenReprompt(string message) {
+        return new Reprompt {
+            OutputSpeech = new PlainTextOutputSpeech(message)
+        };
+    }
 
-        protected IActionResult Tell(string message) {
-            return new OkObjectResult(ResponseBuilder.Tell(message));
-        }
+    protected IActionResult AskOrders(string prompt, string reprompt) {
+        return new OkObjectResult(ResponseBuilder.Ask(prompt, GenReprompt(reprompt)));
+    }
+
+    protected IActionResult Tell(string message) {
+        return new OkObjectResult(ResponseBuilder.Tell(message));
     }
 }
