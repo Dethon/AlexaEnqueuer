@@ -1,5 +1,5 @@
-using System.Text.Json;
 using Alexa.NET.Request;
+using Newtonsoft.Json;
 using AlexaEnqueuer.Code.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -8,28 +8,22 @@ using Microsoft.Extensions.Logging;
 
 namespace AlexaEnqueuer.Code;
 
-public class AlexaEnqueuer {
+public class AlexaEnqueuer(IntentProcessor.IntentProcessor intentProcessor, ILogger<AlexaEnqueuer> logger)
+{
     // Change this instantiation for your own subclass
-    private readonly IntentProcessor.IntentProcessor _mIntentProcessor;
-    private readonly ILogger<AlexaEnqueuer> _mLogger;
-
-    public AlexaEnqueuer(IntentProcessor.IntentProcessor intentProcessor, ILogger<AlexaEnqueuer> logger) {
-        _mIntentProcessor = intentProcessor;
-        _mLogger = logger;
-    }
 
     [Function("AlexaEnqueuer")]
     public async Task<AlexaEnqueuerOutput> AlexaInput(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = null)] HttpRequest request) {
         using var reader = new StreamReader(request.Body);
         var body = await reader.ReadToEndAsync();
-        var skillRequest = JsonSerializer.Deserialize<SkillRequest>(body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var skillRequest = JsonConvert.DeserializeObject<SkillRequest>(body);
         if (skillRequest == null || !await ValidateRequest(request, skillRequest, body)) {
-            _mLogger.LogError("Validation failed - RequestVerification failed");
+            logger.LogError("Validation failed - RequestVerification failed");
             return new AlexaEnqueuerOutput { HttpResponse = new BadRequestResult() };
         }
 
-        var response = _mIntentProcessor.ProcessIntent(skillRequest, _mLogger);
+        var response = intentProcessor.ProcessIntent(skillRequest, logger);
         return new AlexaEnqueuerOutput {
             HttpResponse = response.Response,
             Message = response.Message
@@ -46,14 +40,14 @@ public class AlexaEnqueuer {
                 RequestVerification.RequestTimestampWithinTolerance(skillRequest) &&
                 await RequestVerification.Verify(signature, certUrl, body);
         } catch {
-            _mLogger.LogError("Validation exception");
+            logger.LogError("Validation exception");
             return false;
         }            
     }
 
     [Function("AutoHeater")]
     public void AutoHeater([TimerTrigger("0 */15 * * * *")] TimerInfo myTimer) {
-        _mLogger.LogInformation($"Warming...: {DateTime.Now}");
+        logger.LogInformation($"Warming...: {DateTime.Now}");
     }
 }
 
